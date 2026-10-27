@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 from fuzzy_controller import FuzzyTrafficController
 from traffic_simulator import TrafficSimulator
+from route_optimizer import RouteOptimizer
 
 
 st.set_page_config(
@@ -387,3 +388,243 @@ st.caption(
     "Academic simulation only. Results depend on the model assumptions "
     "and do not represent live road traffic."
 )
+
+
+# --------------------------------------------------
+# SECTION 5: A* ROUTE OPTIMIZATION
+# --------------------------------------------------
+
+st.divider()
+
+st.header("4. A* Congestion-Aware Route Optimization")
+
+st.write(
+    "Compare the shortest-distance route with the fastest estimated "
+    "route using road distance, driving time, congestion, and "
+    "traffic signal delays."
+)
+
+optimizer = RouteOptimizer()
+
+locations = list(optimizer.graph.keys())
+
+route_col1, route_col2, route_col3 = st.columns(3)
+
+with route_col1:
+    start_node = st.selectbox(
+        "Starting location",
+        locations,
+        index=locations.index("A"),
+        key="route_start",
+    )
+
+with route_col2:
+    goal_node = st.selectbox(
+        "Destination",
+        locations,
+        index=locations.index("E"),
+        key="route_goal",
+    )
+
+with route_col3:
+    st.markdown("**Route cost**")
+    st.caption("Estimated travel time or distance")
+
+if st.button(
+    "Find Best Routes",
+    type="primary",
+    key="find_routes",
+):
+    if start_node == goal_node:
+        st.warning(
+            "Please select different starting and destination locations."
+        )
+    else:
+        shortest = optimizer.find_route(
+            start_node,
+            goal_node,
+            mode="shortest",
+        )
+
+        fastest = optimizer.find_route(
+            start_node,
+            goal_node,
+            mode="fastest",
+        )
+
+        st.session_state["shortest_route"] = shortest
+        st.session_state["fastest_route"] = fastest
+        st.session_state["route_start_saved"] = start_node
+        st.session_state["route_goal_saved"] = goal_node
+
+if (
+    "shortest_route" in st.session_state
+    and "fastest_route" in st.session_state
+):
+    shortest = st.session_state["shortest_route"]
+    fastest = st.session_state["fastest_route"]
+
+    saved_start = st.session_state["route_start_saved"]
+    saved_goal = st.session_state["route_goal_saved"]
+
+    if start_node != saved_start or goal_node != saved_goal:
+        st.info("Click **Find Best Routes** to calculate routes for your new selection.")
+    else:
+        result_col1, result_col2 = st.columns(2)
+
+        with result_col1:
+            st.subheader("📏 Shortest-Distance Route")
+            st.markdown(
+                "**Path:** " + " → ".join(shortest["route"])
+            )
+            st.metric(
+                "Total distance",
+                f'{shortest["distance_km"]:.2f} km',
+            )
+            st.metric(
+                "Estimated travel time",
+                f'{shortest["estimated_time_seconds"] / 60:.2f} min',
+            )
+
+        with result_col2:
+            st.subheader("🚗 Fastest Estimated Route")
+            st.markdown(
+                "**Path:** " + " → ".join(fastest["route"])
+            )
+            st.metric(
+                "Total distance",
+                f'{fastest["distance_km"]:.2f} km',
+            )
+            st.metric(
+                "Estimated travel time",
+                f'{fastest["estimated_time_seconds"] / 60:.2f} min',
+            )
+
+        time_saved = (
+            shortest["estimated_time_seconds"]
+            - fastest["estimated_time_seconds"]
+        ) / 60
+
+        if time_saved > 0.01:
+            st.success(
+                f"The fastest route saves approximately "
+                f"{time_saved:.2f} minutes compared with the "
+                f"shortest-distance route."
+            )
+        elif time_saved < -0.01:
+            st.info(
+                f"The shortest-distance route is approximately "
+                f"{abs(time_saved):.2f} minutes faster under "
+                f"the current road-cost assumptions."
+            )
+        else:
+            st.info(
+                "Both routes have approximately the same estimated travel time."
+            )
+
+        st.subheader("Road Network")
+
+        # Draw the sample network schematically.
+        positions = {
+            "A": (0, 1),
+            "B": (2, 2),
+            "C": (2, 0),
+            "D": (4, 1),
+            "E": (6, 1),
+        }
+
+        fig, ax = plt.subplots(figsize=(10, 4))
+
+        # Draw each undirected road once.
+        drawn_roads = set()
+
+        for node, neighbours in optimizer.graph.items():
+            for neighbour, road in neighbours.items():
+                edge = tuple(sorted((node, neighbour)))
+
+                if edge in drawn_roads:
+                    continue
+
+                drawn_roads.add(edge)
+
+                x1, y1 = positions[node]
+                x2, y2 = positions[neighbour]
+
+                ax.plot(
+                    [x1, x2],
+                    [y1, y2],
+                    color="lightgray",
+                    linewidth=2,
+                    zorder=1,
+                )
+
+                midpoint_x = (x1 + x2) / 2
+                midpoint_y = (y1 + y2) / 2
+
+                ax.text(
+                    midpoint_x,
+                    midpoint_y + 0.10,
+                    f'{road["distance_km"]} km',
+                    fontsize=8,
+                    ha="center",
+                )
+
+        # Highlight the shortest route.
+        for i in range(len(shortest["route"]) - 1):
+            first = shortest["route"][i]
+            second = shortest["route"][i + 1]
+
+            x1, y1 = positions[first]
+            x2, y2 = positions[second]
+
+            ax.plot(
+                [x1, x2],
+                [y1, y2],
+                linestyle="--",
+                linewidth=3,
+                label="Shortest distance" if i == 0 else None,
+                zorder=2,
+            )
+
+        # Highlight the fastest route.
+        for i in range(len(fastest["route"]) - 1):
+            first = fastest["route"][i]
+            second = fastest["route"][i + 1]
+
+            x1, y1 = positions[first]
+            x2, y2 = positions[second]
+
+            ax.plot(
+                [x1, x2],
+                [y1, y2],
+                linestyle="-",
+                linewidth=3,
+                label="Fastest estimated time" if i == 0 else None,
+                zorder=3,
+            )
+
+        for node, (x, y) in positions.items():
+            ax.scatter(x, y, s=500, zorder=4)
+            ax.text(
+                x,
+                y,
+                node,
+                ha="center",
+                va="center",
+                color="white",
+                fontweight="bold",
+                zorder=5,
+            )
+
+        ax.set_title("Sample Road Network and Selected Routes")
+        ax.legend()
+        ax.axis("off")
+
+        st.pyplot(fig)
+        plt.close(fig)
+
+        st.caption(
+            "This is an illustrative road network. Distances, speeds, "
+            "congestion scores, and signal delays are assumed values, "
+            "not live traffic data."
+        )

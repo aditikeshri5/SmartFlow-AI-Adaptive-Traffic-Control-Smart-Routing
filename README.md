@@ -1,59 +1,151 @@
-# SmartFlow AI — Starter Prototype
 
-A student project for Artificial Intelligence & Soft Computing (AISC).
+# 🚦 SmartFlow AI — Adaptive Traffic Control & Smart Routing
 
-## Current stage
+SmartFlow AI is an Artificial Intelligence & Soft Computing project that
+uses **Mamdani Fuzzy Logic** to adapt traffic signal durations according
+to traffic congestion and vehicle waiting time.
 
-This first milestone implements a **Mamdani Fuzzy Inference System** to recommend
-a green-light duration based on:
+The project simulates a four-way intersection and compares fuzzy-controlled
+signals with conventional fixed-time signals. It is designed to explore
+how intelligent traffic control can support congestion-aware transportation.
 
-- Traffic density: 0–100% normalized lane occupancy/congestion score
-- Queue waiting time: 0–120 seconds
+## 🎯 Objectives
 
-It uses:
-- Fuzzification with Low/Medium/High and Short/Medium/Long sets
-- A 3×3 IF–THEN rule base
-- Minimum for AND
-- Maximum for rule aggregation
-- Centroid defuzzification
+- Implement a Mamdani Fuzzy Inference System.
+- Model traffic density and waiting time using fuzzy membership functions.
+- Dynamically determine green-light duration using fuzzy rules.
+- Simulate traffic queues at a four-way intersection.
+- Compare fixed-time and fuzzy-controlled signal strategies.
+- Extend the system with A* search for congestion-aware route planning.
 
-This is a simulation prototype, not a real-world traffic controller. The
-membership functions and rules are initial design choices and should be tuned
-and evaluated through repeatable experiments.
+## 🧠 Artificial Intelligence Techniques
 
-## Run locally
+### 1. Fuzzy Logic
 
-1. Install Python 3.10 or later.
-2. Open a terminal in this folder.
-3. Create and activate a virtual environment (recommended).
-4. Install packages:
+The controller uses two inputs:
 
-   ```bash
-   pip install -r requirements.txt
-   ```
+- **Traffic density:** A normalized occupancy/congestion score from 0–100%.
+- **Waiting time:** Queue waiting time from 0–120 seconds.
 
-5. Start the dashboard:
+The output is the green-light duration, ranging from 10–60 seconds.
 
-   ```bash
-   streamlit run app.py
-   ```
+Fuzzy categories include:
 
-## Files
+| Variable | Categories |
+|---|---|
+| Traffic density | Low, Medium, High |
+| Waiting time | Short, Medium, Long |
+| Green duration | Short, Medium, Long |
 
-- `fuzzy_controller.py` — membership functions, rule base, inference and centroid defuzzification
-- `app.py` — interactive Streamlit UI and plots
-- `requirements.txt` — dependencies
+The controller applies nine fuzzy rules using Mamdani inference,
+min for rule conjunction, max for aggregation, and centroid
+defuzzification.
 
-## Planned next steps
+Example rule:
 
-1. Add a time-stepped traffic simulator with vehicle arrivals and queue discharge.
-2. Compare fuzzy signal timing with a fixed-time baseline under identical traffic scenarios.
-3. Add a road graph and A* route planning using estimated travel time and signal/queue delays.
-4. Recalculate routes when traffic costs change and evaluate whether congestion metrics improve.
+> IF traffic density is HIGH AND waiting time is LONG,
+> THEN green-light duration is LONG.
 
-## Important modeling note
+### 2. Traffic Simulation
 
-The current density input is a normalized occupancy/congestion score, not the
-formal traffic-engineering density measured in vehicles per kilometre. For a
-more physically meaningful model, define lane length, vehicle spacing and
-storage capacity, then document the chosen assumptions.
+The simulator models:
+- Four traffic approaches: North, East, South, and West.
+- Random vehicle arrivals.
+- Vehicle queues and signal phases.
+- Fixed-time and fuzzy-controlled signal strategies.
+
+### 3. Planned A* Route Optimization
+
+The next development phase will represent roads as a graph and use
+A* search to identify routes based on estimated travel costs.
+
+The planned road cost is:
+
+`Road Cost = Driving Time + Signal Delay + Queue Delay`
+
+A* evaluates paths using:
+
+`f(n) = g(n) + h(n)`
+
+where `g(n)` is the accumulated route cost and `h(n)` is the estimated
+remaining cost to the destination.
+
+## 🛠️ Technology Stack
+
+- Python
+- NumPy
+- Pandas
+- Matplotlib
+- Streamlit
+
+## 📁 Project Structure
+
+```text
+SmartFlow_AI/
+├── app.py
+├── fuzzy_controller.py
+├── traffic_simulator.py
+├── requirements.txt
+└── README.md
+```
+
+## ⚙️ Installation and Setup
+
+### Prerequisites
+
+- Python 3.10 or later recommended
+- pip
+- VS Code (optional)
+
+### 1. Install dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Run the application
+
+```bash
+streamlit run app.py
+```
+
+The dashboard should open in your browser.
+
+## 📊 Evaluation Metrics
+
+The current dashboard reports:
+
+- Average waiting time of served vehicles
+- Number of vehicles served
+- Number of vehicles remaining
+- Maximum combined queue observed
+- Throughput in vehicles per minute
+
+Results depend on simulation settings, random arrivals, and model
+assumptions. Multiple random seeds and traffic patterns should be
+tested before drawing conclusions about performance.
+
+## ⚠️ Current Limitations
+
+- Traffic is simulated rather than collected from live roads.
+- Density is represented by a normalized queue occupancy score.
+- Vehicle movement, turning conflicts, pedestrians, and road geometry
+  are simplified.
+- The current implementation does not yet include A* routing.
+- Simulation results do not guarantee improvements in real-world traffic.
+
+## 🚀 Future Enhancements
+
+- A* congestion-aware route optimization.
+- Dynamic road-network modelling.
+- Multiple traffic demand scenarios.
+- Repeated experiments with different random seeds.
+- Comparative charts and statistical evaluation.
+- Optional live traffic data integration in a future version.
+
+## 👩‍💻 Project
+
+**SmartFlow AI — Adaptive Traffic Control & Smart Routing**
+
+An academic project exploring fuzzy logic and intelligent routing
+for traffic management.
